@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Report Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .field-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        .add-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .add-btn:hover {
+            background-color: #45a049;
+        }
+        .output, .client-table {
+            margin-top: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th, td {
+            padding: 8px;
+        }
+        button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Daily Report Form</h2>
+
+        <!-- Shift Selection -->
+        <div class="field-group">
+            <label for="shift">Shift</label>
+            <select id="shift" onchange="updateOutput()">
+                <option value="07:00 - 15:00">07:00 - 15:00</option>
+                <option value="09:00 - 17:00">09:00 - 17:00</option>
+                <option value="11:00 - 19:00">11:00 - 19:00</option>
+                <option value="13:00 - 21:00">13:00 - 21:00</option>
+                <option value="15:00 - 23:00">15:00 - 23:00</option>
+                <option value="17:00 - 01:00">17:00 - 01:00</option>
+                <option value="19:00 - 03:00">19:00 - 03:00</option>
+                <option value="23:00 - 07:00">23:00 - 07:00</option>
+            </select>
+        </div>
+
+        <!-- Per Chat -->
+        <div id="chat-container">
+            <h3>Chat Details</h3>
+            <div class="chat-group">
+                <div class="field-group">
+                    <label for="client-name">Client Name</label>
+                    <input type="text" id="client-name" placeholder="Enter Client Name">
+                </div>
+                <div class="field-group">
+                    <label for="rating">Rating</label>
+                    <select id="rating">
+                        <option value="Good">Good</option>
+                        <option value="Bad">Bad</option>
+                        <option value="None">None</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="tag">Tag</label>
+                    <select id="tag" onchange="handleTagChange(this)">
+                        <option value="Support Resolved">Support Resolved</option>
+                        <option value="Transferred">Transferred</option>
+                        <option value="Review Request">Review Request</option>
+                        <option value="Discon">Discon</option>
+                        <option value="Billing Ticket">Billing Ticket</option>
+                        <option value="Existing Ticket">Existing Ticket</option>
+                        <option value="Ticket Advised">Ticket Advised</option>
+                        <option value="Ticket Posted">Ticket Posted</option>
+                    </select>
+                </div>
+                <div class="additional-fields" style="display: none;">
+                    <div class="field-group">
+                        <label for="needed">Needed</label>
+                        <textarea id="needed" rows="2"></textarea>
+                    </div>
+                    <div class="field-group">
+                        <label for="additional-info">Additional Info (Why/URL)</label>
+                        <textarea id="additional-info" rows="2"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addChat()">Add Chat</button>
+            </div>
+        </div>
+
+        <!-- Output and Client Table -->
+        <div class="output">
+            <h3>Report Output</h3>
+            <pre id="output"></pre>
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            <button onclick="sendEmail()">Send Report</button>
+        </div>
+       <div class="client-table">
+    <h3>Clients</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Client Name</th>
+                <th>Tag</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+        <tbody id="client-table-body"></tbody>
+    </table>
+</div>
+
+    </div>
+
+    <script>
+        let chats = [];
+        let clientID = 1;
+
+        function handleTagChange(tagSelect) {
+            const additionalFields = tagSelect.closest('.chat-group').querySelector('.additional-fields');
+            if (tagSelect.value === 'Ticket Advised' || tagSelect.value === 'Ticket Posted') {
+                additionalFields.style.display = 'block';
+            } else {
+                additionalFields.style.display = 'none';
+            }
+        }
+
+        function addChat() {
+            const clientName = document.getElementById('client-name').value;
+            const rating = document.getElementById('rating').value;
+            const tag = document.getElementById('tag').value;
+            const needed = document.getElementById('needed').value;
+            const additionalInfo = document.getElementById('additional-info').value;
+
+            if (clientName) {
+                chats.push({ id: clientID++, clientName, rating, tag, needed, additionalInfo });
+                updateOutput();
+                updateClientTable();
+                document.getElementById('client-name').value = '';
+                document.getElementById('rating').value = 'None';
+                document.getElementById('tag').value = 'Support Resolved';
+                document.getElementById('needed').value = '';
+                document.getElementById('additional-info').value = '';
+                document.querySelector('.additional-fields').style.display = 'none';
+            } else {
+                alert('Please fill in the Client Name.');
+            }
+        }
+
+function updateOutput() {
+    const shift = document.getElementById('shift').value || '-';
+
+    // Count total chats, good ratings, and bad ratings
+    const totalChats = chats.length || '-';
+    const goodRatings = chats.filter(chat => chat.rating === 'Good').length || '-';
+    const badRatings = chats.filter(chat => chat.rating === 'Bad').length || '-';
+    const reviewRequests = chats.filter(chat => chat.tag === 'Review Request').length || '-';
+
+    // Count tags
+    const supportResolved = chats.filter(chat => chat.tag === 'Support Resolved').length || 0;
+    const transferred = chats.filter(chat => chat.tag === 'Transferred').length || '-';
+    const existingTickets = chats.filter(chat => chat.tag === 'Existing Ticket').length || '-';
+    const billingTickets = chats.filter(chat => chat.tag === 'Billing Ticket').length || '-';
+
+    // Get tickets posted and advised
+    const postedTickets = chats.filter(chat => chat.tag === 'Ticket Posted');
+    const advisedTickets = chats.filter(chat => chat.tag === 'Ticket Advised');
+
+    // Build the report
+    let report = `\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `Shift: ${shift}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Total Chats: ${totalChats}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Good Ratings: ${goodRatings}\n`;
+    report += `* Bad Ratings: ${badRatings}\n`;
+    report += `* Review Request: ${reviewRequests}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Support Resolved: ${supportResolved}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Transferred: ${transferred}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Existing Ticket: ${existingTickets}\n`;
+    report += `* Billing Ticket: ${billingTickets}\n`;
+    report += `——————————————-——————————————-———\n`;
+    report += `* Support Ticket Posted: ${postedTickets.length || 0}\n`;
+    if (postedTickets.length > 0) {
+        postedTickets.forEach((ticket, index) => {
+            report += `${index + 1}.\n   - Link: ${ticket.additionalInfo || ''}\n   - Needed: ${ticket.needed || ''}\n`;
+        });
+    } else {
+        report += `   - Link:\n   - Needed:\n`;
+    }
+    report += `——————————————-——————————————-———\n`;
+    report += `* Support Ticket Advised: ${advisedTickets.length || 0}\n`;
+    if (advisedTickets.length > 0) {
+        advisedTickets.forEach((ticket, index) => {
+            report += `${index + 1}\n   - Why: ${ticket.additionalInfo || ''}\n   - Needed: ${ticket.needed || ''}\n`;
+        });
+    } else {
+        report += `   - Why:\n   - Needed:\n`;
+    }
+    report += `——————————————-——————————————-———\n`;
+
+    // Update the output on the page
+    document.getElementById('output').textContent = report;
+}
+
+
+      function updateClientTable() {
+    const tableBody = document.getElementById('client-table-body');
+    tableBody.innerHTML = '';
+    chats.forEach(chat => {
+        let row = `<tr>
+            <td>${chat.id}</td>
+            <td>${chat.clientName}</td>
+            <td>${chat.tag}</td>
+            <td>${chat.rating}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+}
+
+        function copyToClipboard() {
+            const output = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+
+function sendEmail() {
+    const reportContent = document.getElementById('output').textContent;  // Grab the content from the #output element
+
+    // Format the date as DD.MM.YYYY
+    const currentDate = new Date().toLocaleDateString('en-GB'); // Format as "DD/MM/YYYY"
+    const formattedDate = currentDate.split('/').reverse().join('.');  // Convert to "DD.MM.YYYY"
+    
+    // Set the subject with the formatted date
+    const subject = `Daily Report - Daniel Dinev - ${formattedDate}`;
+
+    // Log the subject and report before sending
+    console.log("Subject being sent:", subject); // Log the subject
+    console.log("Report being sent:", reportContent); // Log the report
+
+    // Ensure the backend URL is correct (your production URL or local testing URL)
+    fetch('https://daniel-dinev.ampro1.fcomet.com/send-email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ report: reportContent, subject: subject }),  // Send both report and subject in the request body
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Failed to send report. Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Report sent successfully!');
+        console.log('Success:', data);  // Log success message for debugging
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending the report. Check the console for details.');
+    });
+}
+    </script>
+</body>
+</html>
