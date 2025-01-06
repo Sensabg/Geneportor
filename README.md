@@ -1,2 +1,1 @@
-# Generate-Report
-Report generator
+# Report generator
